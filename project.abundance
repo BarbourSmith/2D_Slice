@@ -1,13 +1,126 @@
 {
-    "atomType": "Molecule",
-    "x": 0,
-    "y": 0,
-    "uniqueID": "id-317",
-    "name": "2D_Slice",
-    "topLevel": true,
-    "allAtoms": [],
-    "allConnectors": [],
-    "unitsKey": "MM",
-    "fileTypeVersion": 1,
-    "filetypeVersion": 1
+  "atomType": "Molecule",
+  "x": 0,
+  "y": 0,
+  "uniqueID": "id-317",
+  "name": "2D_Slice",
+  "ioValues": [
+    {
+      "name": "Input",
+      "ioValue": "__GEOMETRY_INPUT__"
+    }
+  ],
+  "topLevel": true,
+  "allAtoms": [
+    {
+      "atomType": "Output",
+      "x": 0.98,
+      "y": 0.5,
+      "uniqueID": "id-318",
+      "ioValues": [
+        {
+          "name": "number or geometry",
+          "ioValue": "__GEOMETRY_INPUT__"
+        }
+      ]
+    },
+    {
+      "atomType": "Code",
+      "x": 0.5251322751322751,
+      "y": 0.479108635097493,
+      "uniqueID": "id-320",
+      "ioValues": [
+        {
+          "name": "shape",
+          "ioValue": "__GEOMETRY_INPUT__"
+        }
+      ],
+      "codeVersion": 1,
+      "code": "const Inputs = [\n  { inputName: \"shape\", type: \"geometry\", defaultValue: null },\n];\n\nreturn await AssemblyMap(library[shape], async (leaf) => {\n  let solid = leaf.geometry[0];\n\n  let finder = new replicad.FaceFinder().inPlane(\"XY\", 0);\n  let faces = finder.applyFilter(solid);\n\n  if (faces.length === 0) {\n    // No face at Z=0 yet — cut away everything above to create one\n    let bounds = solid.boundingBox.bounds;\n    let margin = 1;\n    let w = bounds[1][0] - bounds[0][0] + 2 * margin;\n    let h = bounds[1][1] - bounds[0][1] + 2 * margin;\n    let cx = (bounds[0][0] + bounds[1][0]) / 2;\n    let cy = (bounds[0][1] + bounds[1][1]) / 2;\n    let maxZ = bounds[1][2] + margin;\n\n    let upperBox = replicad.drawRectangle(w, h)\n      .sketchOnPlane(\"XY\")\n      .extrude(maxZ)\n      .translate(cx, cy, 0);\n\n    let cut = solid.cut(upperBox);\n    faces = finder.applyFilter(cut);\n  }\n\n  if (faces.length === 0) {\n    throw new Error(\"Shape does not intersect the XY plane\");\n  }\n\n  let drawing = replicad.drawFaceOutline(faces[0]);\n\n  return {\n    ...leaf,\n    geometry: [drawing],\n    dimension: \"2D\",\n  };\n});\n"
+    },
+    {
+      "atomType": "Input",
+      "x": 0.025384615384615384,
+      "y": 0.6100278551532033,
+      "uniqueID": "id-323",
+      "type": "geometry"
+    },
+    {
+      "atomType": "Circle",
+      "x": 0.17195767195767198,
+      "y": 0.26740947075208915,
+      "uniqueID": "id-326",
+      "ioValues": [
+        {
+          "name": "diameter",
+          "ioValue": 10
+        }
+      ]
+    },
+    {
+      "atomType": "Extrude",
+      "x": 0.2830687830687831,
+      "y": 0.3955431754874652,
+      "uniqueID": "id-329",
+      "ioValues": [
+        {
+          "name": "geometry",
+          "ioValue": "__GEOMETRY_INPUT__"
+        },
+        {
+          "name": "height",
+          "ioValue": 10
+        }
+      ]
+    },
+    {
+      "atomType": "Move",
+      "x": 0.39814814814814814,
+      "y": 0.2785515320334262,
+      "uniqueID": "id-333",
+      "ioValues": [
+        {
+          "name": "geometry",
+          "ioValue": "__GEOMETRY_INPUT__"
+        },
+        {
+          "name": "xDist",
+          "ioValue": 0
+        },
+        {
+          "name": "yDist",
+          "ioValue": 0
+        },
+        {
+          "name": "zDist",
+          "ioValue": -3
+        }
+      ]
+    }
+  ],
+  "allConnectors": [
+    {
+      "ap2Name": "number or geometry",
+      "ap1ID": "id-320",
+      "ap2ID": "id-318"
+    },
+    {
+      "ap2Name": "shape",
+      "ap1ID": "id-323",
+      "ap2ID": "id-320"
+    },
+    {
+      "ap2Name": "geometry",
+      "ap1ID": "id-326",
+      "ap2ID": "id-329"
+    },
+    {
+      "ap2Name": "geometry",
+      "ap1ID": "id-329",
+      "ap2ID": "id-333"
+    }
+  ],
+  "unitsKey": "MM",
+  "fileTypeVersion": 1,
+  "filetypeVersion": 1
 }
