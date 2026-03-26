@@ -26,8 +26,8 @@
     },
     {
       "atomType": "Code",
-      "x": 0.5806878306878307,
-      "y": 0.5097493036211699,
+      "x": 0.5813492063492063,
+      "y": 0.5236768802228412,
       "uniqueID": "id-320",
       "ioValues": [
         {
@@ -36,7 +36,7 @@
         }
       ],
       "codeVersion": 1,
-      "code": "const Inputs = [\n  { inputName: \"shape\", type: \"geometry\", defaultValue: null },\n];\n\nreturn await AssemblyMap(library[shape], async (leaf) => {\n  let solid = leaf.geometry[0];\n\n  let finder = new replicad.FaceFinder().inPlane(\"XY\", 0);\n  let faces = finder.applyFilter(solid);\n\n  if (faces.length === 0) {\n    let bounds = solid.boundingBox.bounds;\n    let margin = 1;\n    let w = bounds[1][0] - bounds[0][0] + 2 * margin;\n    let h = bounds[1][1] - bounds[0][1] + 2 * margin;\n    let cx = (bounds[0][0] + bounds[1][0]) / 2;\n    let cy = (bounds[0][1] + bounds[1][1]) / 2;\n    let maxZ = bounds[1][2] + margin;\n\n    let upperBox = replicad.drawRectangle(w, h)\n      .sketchOnPlane(\"XY\")\n      .extrude(maxZ)\n      .translate(cx, cy, 0);\n\n    let cut = solid.cut(upperBox);\n    faces = finder.applyFilter(cut);\n  }\n\n  if (faces.length === 0) {\n    throw new Error(\"Shape does not intersect the XY plane\");\n  }\n\n  // drawFaceOutline returns curves in absolute UV (parametric) space.\n  // For a face in the XY plane, UV→world is: world = planeOrigin + (u, v).\n  // The plane origin is the world point at absolute UV=(0,0).\n  // face.pointOnSurface uses normalised coords (0→uMin, 1→uMax), so we\n  // compute the normalised coordinate that maps to absolute UV=0.\n  let { uMin, uMax, vMin, vMax } = faces[0].UVBounds;\n  let planeOrigin = faces[0].pointOnSurface(\n    -uMin / (uMax - uMin),\n    -vMin / (vMax - vMin)\n  );\n  let drawing = replicad.drawFaceOutline(faces[0]).translate(planeOrigin.x, planeOrigin.y);\n\n  return {\n    ...leaf,\n    geometry: [drawing],\n    dimension: \"2D\",\n  };\n});\n"
+      "code": "const Inputs = [\n  { inputName: \"shape\", type: \"geometry\", defaultValue: null },\n];\n\nreturn await AssemblyMap(library[shape], async (leaf) => {\n  let solid = leaf.geometry[0];\n\n  let finder = new replicad.FaceFinder().inPlane(\"XY\", 0);\n  let faces = finder.applyFilter(solid);\n\n  if (faces.length === 0) {\n    let bounds = solid.boundingBox.bounds;\n    let margin = 1;\n    let w = bounds[1][0] - bounds[0][0] + 2 * margin;\n    let h = bounds[1][1] - bounds[0][1] + 2 * margin;\n    let cx = (bounds[0][0] + bounds[1][0]) / 2;\n    let cy = (bounds[0][1] + bounds[1][1]) / 2;\n    let maxZ = bounds[1][2] + margin;\n\n    let upperBox = replicad.drawRectangle(w, h)\n      .sketchOnPlane(\"XY\")\n      .extrude(maxZ)\n      .translate(cx, cy, 0);\n\n    let cut = solid.cut(upperBox);\n    faces = finder.applyFilter(cut);\n  }\n\n  if (faces.length === 0) {\n    throw new Error(\"Shape does not intersect the XY plane\");\n  }\n\n  let { uMin, uMax, vMin, vMax } = faces[0].UVBounds;\n\n  // Sample two world points at different U values to determine the U axis direction\n  let p00 = faces[0].pointOnSurface(0, 0); // world at absolute UV (uMin, vMin)\n  let p10 = faces[0].pointOnSurface(1, 0); // world at absolute UV (uMax, vMin)\n\n  let du = uMax - uMin;\n  let uAxisX = (p10.x - p00.x) / du;\n  let uAxisY = (p10.y - p00.y) / du;\n\n  // Rotation angle of the face's U axis relative to world X, in degrees\n  let angleDeg = Math.atan2(uAxisY, uAxisX) * 180 / Math.PI;\n\n  // Geom_Plane origin: world point at absolute UV = (0, 0)\n  // V axis = Z × U (right-hand rule for XY plane): (-uAxisY, uAxisX)\n  let vAxisX = -uAxisY;\n  let vAxisY = uAxisX;\n  let planeOriginX = p00.x - uMin * uAxisX - vMin * vAxisX;\n  let planeOriginY = p00.y - uMin * uAxisY - vMin * vAxisY;\n\n  // drawFaceOutline returns curves in absolute UV space.\n  // Convert to world XY: rotate by the U-axis angle, then translate by the plane origin.\n  let drawing = replicad.drawFaceOutline(faces[0])\n    .rotate(angleDeg)\n    .translate(planeOriginX, planeOriginY);\n\n  return {\n    ...leaf,\n    geometry: [drawing],\n    dimension: \"2D\",\n  };\n});\n"
     },
     {
       "atomType": "Input",
@@ -155,22 +155,6 @@
       ]
     },
     {
-      "atomType": "Extrude",
-      "x": 0.6898148148148149,
-      "y": 0.7855153203342619,
-      "uniqueID": "id-365",
-      "ioValues": [
-        {
-          "name": "geometry",
-          "ioValue": "__GEOMETRY_INPUT__"
-        },
-        {
-          "name": "height",
-          "ioValue": 10
-        }
-      ]
-    },
-    {
       "atomType": "Rotate",
       "x": 0.5112433862433863,
       "y": 0.8579387186629527,
@@ -202,9 +186,9 @@
       "ap2ID": "id-318"
     },
     {
-      "ap2Name": "geometry",
-      "ap1ID": "id-320",
-      "ap2ID": "id-365"
+      "ap2Name": "shape",
+      "ap1ID": "id-323",
+      "ap2ID": "id-320"
     },
     {
       "ap2Name": "geometry",
@@ -230,11 +214,6 @@
       "ap2Name": "geometry",
       "ap1ID": "id-361",
       "ap2ID": "id-369"
-    },
-    {
-      "ap2Name": "shape",
-      "ap1ID": "id-369",
-      "ap2ID": "id-320"
     }
   ],
   "unitsKey": "MM",
